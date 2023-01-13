@@ -33,7 +33,7 @@ nlohmann::json to_json() const {                        \
 
 namespace Openai::Impl {
 
-struct RestInterface {
+struct RestConnector {
     enum struct Request { POST };
 
     struct Response {
@@ -41,23 +41,23 @@ struct RestInterface {
         std::string body;
     };
 
-    virtual RestInterface& set_route_path(std::string&& value) = 0;
-    virtual RestInterface& add_header_field(std::string&& name, std::string&& value) = 0;
-    virtual RestInterface& set_body_content(std::string&& data) = 0;
+    virtual RestConnector& appendRoutePath(std::string&& value) = 0;
+    virtual RestConnector& addHeaderField(std::string&& name, std::string&& value) = 0;
+    virtual RestConnector& setBodyContent(std::string&& data) = 0;
 
-    virtual std::future<Response> submit_request(Request type) = 0;
+    virtual std::future<Response> submitRequest(Request type) = 0;
 
-    virtual ~RestInterface() = default;
+    virtual ~RestConnector() = default;
 };
 
-std::future<RestInterface::Response> convert(std::future<cpr::Response> future)
+std::future<RestConnector::Response> convert(std::future<cpr::Response> future)
 {
     assert(future.valid());
     return cpr::async(
-        [](auto& future) -> RestInterface::Response {
+        [](auto& future) -> RestConnector::Response {
             auto http_response = future.get();
             return {
-                .code = static_cast<decltype(RestInterface::Response::code)>(http_response.status_code),
+                .code = static_cast<decltype(RestConnector::Response::code)>(http_response.status_code),
                 .body = std::move(http_response.text),
             };
         },
@@ -65,71 +65,85 @@ std::future<RestInterface::Response> convert(std::future<cpr::Response> future)
     );
 }
 
-auto get_api_key() -> std::string
+auto apiKey() -> std::string
 {
     const char* const ENV_VAR = "OPENAI_API_KEY";
     const char* const API_KEY = std::getenv(ENV_VAR);
 
-    if (not API_KEY) {
+    if (not API_KEY)
+    {
         throw std::invalid_argument{"Provide your '"s + ENV_VAR + "' variable to use it's services."};
     }
 
     return API_KEY;
 }
 
-class RestApi: public RestInterface {
+class HttpConnector final: public RestConnector {
 public:
-    explicit RestApi(std::string&& base = "https://api.openai.com/v1")
-        : m_token(get_api_key())
-        , m_url(std::move(base))
+    explicit HttpConnector(std::string&& url, std::optional<std::string>&& bearer={})
+        : m_url(std::move(url))
     {
-        assert(strlen(m_token.GetToken()) > 0);
-
         assert(m_url.str().length() > 0);
         assert(m_url.str().back() != '/');
 
         assert(m_header.empty());
         assert(m_body.str().empty());
+
+        if (bearer.has_value()) {
+            addHeaderField("Authorization", "Bearer "s + (*bearer));
+        }
     }
 
-    RestInterface& set_route_path(std::string&& value) override
+    RestConnector& appendRoutePath(std::string&& value) override
     {
-        m_url = m_url.str() + std::move(value);
+        assert(not value.empty());
+        assert(value.front() == '/');
+        assert(value.back() != '/');
 
+        m_url = m_url.str() + std::move(value);
         return (*this);
     }
 
-    RestInterface& add_header_field(std::string&& name, std::string&& value) override
+    RestConnector& addHeaderField(std::string&& name, std::string&& value) override
     {
+        assert(not name.empty());
+        assert(not value.empty());
+
         [[maybe_unused]]
         const auto [_, ok] = m_header.emplace(
             std::pair{std::move(name), std::move(value)}
         );
+
         assert(ok);
-
         return (*this);
     }
 
-    RestInterface& set_body_content(std::string&& data) override
+    RestConnector& setBodyContent(std::string&& data) override
     {
+        assert(not data.empty());
+
         m_body = std::move(data);
-
         return (*this);
     }
 
-    std::future<Response> submit_request(const Request type) override
+    std::future<Response> submitRequest(const Request type) override
     {
-        if (type == Request::POST)
-        {
-            return convert(cpr::PostAsync(m_url, m_token, m_header, m_body));
+        auto session = std::make_shared<cpr::Session>();
+
+        session->SetOption(m_url);
+        session->SetOption(m_header);
+
+        session->SetOption(std::move(m_body));
+        m_body = cpr::Body{};
+
+        if (Request::POST == type) {
+            return convert(session->PostAsync());
         }
 
         std::abort();
     }
 
 private:
-    const cpr::Bearer m_token;
-
     cpr::Url m_url;
     cpr::Header m_header;
     cpr::Body m_body;
@@ -141,11 +155,13 @@ namespace Openai::Impl {
 
 class Completion {
 public:
-    explicit Completion(std::unique_ptr<RestInterface> rest_api): m_rest_api(std::move(rest_api))
+    explicit Completion(std::unique_ptr<RestConnector> connector): m_connector(std::move(connector))
     {
-        m_rest_api.operator*()
-                .set_route_path("/completions")
-                  .add_header_field("Content-Type", "application/json");
+        assert(m_connector);
+
+        (*m_connector)
+            .appendRoutePath("/completions")
+            .addHeaderField("Content-Type", "application/json");
     }
 
     void model(std::string_view idx)
@@ -158,17 +174,17 @@ public:
         m_prompt = txt;
     }
 
-    std::future<RestInterface::Response> submit()
+    std::future<RestConnector::Response> submit()
     {
-        return m_rest_api.operator*()
-                         .set_body_content(to_json().dump())
-                         .submit_request(RestInterface::Request::POST);
+        return m_connector.operator*()
+                .setBodyContent(to_json().dump())
+                .submitRequest(RestConnector::Request::POST);
     }
 
     class Result;
 
 private:
-    std::unique_ptr<RestInterface> m_rest_api;
+    std::unique_ptr<RestConnector> m_connector;
 
     TO_JSON_METHOD(model, prompt);
 
@@ -181,7 +197,7 @@ public:
     struct Choice {
         std::string text;
     };
-    explicit Result(std::future<RestInterface::Response> response): m_response(std::move(response)) {
+    explicit Result(std::future<RestConnector::Response> response): m_response(std::move(response)) {
 
     }
     std::optional<std::time_t> created()
@@ -201,7 +217,7 @@ private:
             m_choices = Choice{.text=nlohmann::json::parse(out.body).at("choices").at(0).value("text", "")};
         }
     }
-    std::future<RestInterface::Response> m_response;
+    std::future<RestConnector::Response> m_response;
     std::optional<std::time_t> m_created;
     std::optional<Choice> m_choices;
 };
@@ -240,7 +256,9 @@ R"json(
 //    test.at("created").get_to(out);
 //    std::cout << test << '\n';
 
-    auto completion = Openai::Impl::Completion{std::make_unique<Openai::Impl::RestApi>()};
+    auto completion = Openai::Impl::Completion{
+        std::make_unique<Openai::Impl::HttpConnector>("https://api.openai.com/v1", Openai::Impl::apiKey())};
+
     completion.model("text-davinci-003");
     completion.prompt("I wanna to");
 //

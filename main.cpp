@@ -9,6 +9,8 @@
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 
+using namespace std::string_literals;
+
 template<typename T>
 struct is_optional: std::false_type {};
 
@@ -31,20 +33,17 @@ nlohmann::json to_json() const {                        \
 
 namespace Openai::Impl {
 
-class RestInterface {
-public:
-    enum class Request {
-        POST,
-    };
+struct RestInterface {
+    enum struct Request { POST };
 
     struct Response {
         std::uint16_t code;
         std::string body;
     };
 
-    virtual RestInterface& set_endpoint_path(const std::string& path) = 0;
-    virtual RestInterface& add_header_field(const std::string& name, const std::string& value) = 0;
-    virtual RestInterface& set_body_content(const std::string& data) = 0;
+    virtual RestInterface& set_route_path(std::string&& value) = 0;
+    virtual RestInterface& add_header_field(std::string&& name, std::string&& value) = 0;
+    virtual RestInterface& set_body_content(std::string&& data) = 0;
 
     virtual std::future<Response> submit_request(Request type) = 0;
 
@@ -66,33 +65,55 @@ std::future<RestInterface::Response> convert(std::future<cpr::Response> future)
     );
 }
 
-class RestApiv1: public RestInterface {
+auto get_api_key() -> std::string
+{
+    const char* const ENV_VAR = "OPENAI_API_KEY";
+    const char* const API_KEY = std::getenv(ENV_VAR);
+
+    if (not API_KEY) {
+        throw std::invalid_argument{"Provide your '"s + ENV_VAR + "' variable to use it's services."};
+    }
+
+    return API_KEY;
+}
+
+class RestApi: public RestInterface {
 public:
-    RestApiv1(): m_token{"OPENAI_API_KEY"}  // XXX: Token is not default constructible.
+    explicit RestApi(std::string&& base = "https://api.openai.com/v1")
+        : m_token(get_api_key())
+        , m_url(std::move(base))
     {
-        const char* const api_key = std::getenv(m_token.GetToken());
-        if (not api_key) {
-            throw std::invalid_argument{m_token.GetToken() + std::string{" is not provided"}};
-        }
-        m_token = cpr::Bearer{api_key};
-        m_url = std::string{BASE_URL};
+        assert(strlen(m_token.GetToken()) > 0);
+
+        assert(m_url.str().length() > 0);
+        assert(m_url.str().back() != '/');
+
+        assert(m_header.empty());
+        assert(m_body.str().empty());
     }
 
-    RestInterface& set_endpoint_path(const std::string& path) override
+    RestInterface& set_route_path(std::string&& value) override
     {
-        m_url += path;
+        m_url = m_url.str() + std::move(value);
+
         return (*this);
     }
 
-    RestInterface& add_header_field(const std::string& name, const std::string& value) override
+    RestInterface& add_header_field(std::string&& name, std::string&& value) override
     {
-        m_header.emplace(std::pair{name, value});
+        [[maybe_unused]]
+        const auto [_, ok] = m_header.emplace(
+            std::pair{std::move(name), std::move(value)}
+        );
+        assert(ok);
+
         return (*this);
     }
 
-    RestInterface& set_body_content(const std::string& data) override
+    RestInterface& set_body_content(std::string&& data) override
     {
-        m_body = data;
+        m_body = std::move(data);
+
         return (*this);
     }
 
@@ -107,10 +128,9 @@ public:
     }
 
 private:
-    constexpr static std::string_view BASE_URL{"https://api.openai.com/v1"};
+    const cpr::Bearer m_token;
 
     cpr::Url m_url;
-    cpr::Bearer m_token;
     cpr::Header m_header;
     cpr::Body m_body;
 };
@@ -124,7 +144,7 @@ public:
     explicit Completion(std::unique_ptr<RestInterface> rest_api): m_rest_api(std::move(rest_api))
     {
         m_rest_api.operator*()
-                  .set_endpoint_path("/completions")
+                .set_route_path("/completions")
                   .add_header_field("Content-Type", "application/json");
     }
 
@@ -191,7 +211,7 @@ private:
 int main()
 {
     auto test = nlohmann::json::parse(
-R"(
+R"json(
 {
     "id": "cmpl-6XtQ30LBc9RimfVYTRd2wpselIszg",
     "object": "text_completion",
@@ -213,14 +233,14 @@ R"(
         "total_tokens": 19
     }
 }
-)"
+)json"
     );
 
 //    int out{};
 //    test.at("created").get_to(out);
 //    std::cout << test << '\n';
 
-    auto completion = Openai::Impl::Completion{std::make_unique<Openai::Impl::RestApiv1>()};
+    auto completion = Openai::Impl::Completion{std::make_unique<Openai::Impl::RestApi>()};
     completion.model("text-davinci-003");
     completion.prompt("I wanna to");
 //

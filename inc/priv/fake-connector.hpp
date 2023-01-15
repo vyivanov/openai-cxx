@@ -16,6 +16,13 @@ struct FakeConnector final: RestConnector {
 
     std::future<Response> submitGetRequest() override;
     std::future<Response> submitPostRequest() override;
+
+private:
+    std::future<Response> make_response();
+
+    Response::Code m_code;
+    Response::Header m_header;
+    Response::Body m_body;
 };
 
 }

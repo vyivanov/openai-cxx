@@ -4,6 +4,9 @@ project(openaicxx LANGUAGES CXX
 
 find_package(Boost REQUIRED)
 
+enable_testing()
+add_subdirectory(tests)
+
 set(INC_PRIV inc/priv/fake-connector.hpp
              inc/priv/rest-connector.hpp)
 

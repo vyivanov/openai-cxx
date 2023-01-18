@@ -8,6 +8,7 @@
 namespace Openai::Impl {
 
 struct FakeConnector final: RestConnector {
+    FakeConnector() = default;
     FakeConnector(Response::Code code, Response::Header header, Response::Body body);
 
     FakeConnector& appendRoutePath(std::string&& value) override;
@@ -20,9 +21,9 @@ struct FakeConnector final: RestConnector {
 private:
     std::future<Response> make_response();
 
-    Response::Code m_code;
-    Response::Header m_header;
-    Response::Body m_body;
+    Response::Code m_code = {};
+    Response::Header m_header = {};
+    Response::Body m_body = {};
 };
 
 }

@@ -11,7 +11,7 @@
 using Openai::Impl::FakeConnector;
 using namespace std::string_literals;
 
-constexpr auto SUBMIT_REQUEST_METHODS = std::array{
+constexpr auto SUBMIT_REQUEST_METHODS = std::array {
     &FakeConnector::submitGetRequest,
     &FakeConnector::submitPostRequest,
 };
@@ -38,10 +38,7 @@ TEST(test_params_throughing, pass_empty_response_fields)
             EXPECT_EQ(resp.code, decltype(resp.code){});
             EXPECT_EQ(resp.header, decltype(resp.header){});
             EXPECT_EQ(resp.body, decltype(resp.body){});
-        },
-        FakeConnector::Response::Code{},
-        FakeConnector::Response::Header{},
-        FakeConnector::Response::Body{}
+        }
     );
 }
 

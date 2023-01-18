@@ -1,6 +1,5 @@
 #include <array>
 #include <functional>
-#include <utility>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
@@ -20,10 +19,10 @@ template <typename... Ts>
 void iterateOverSubmitRequests(
     const std::function<void(std::function<FakeConnector::Response()>)>& validate, const Ts&... args)
 {
-    BOOST_FOREACH(const auto pfn, ::SUBMIT_REQUEST_METHODS) {
+    BOOST_FOREACH(const auto& pfn, ::SUBMIT_REQUEST_METHODS) {
         auto fake = FakeConnector(args...);
         validate([&] {
-            return std::bind(pfn, &fake)().get();
+            return (fake.*pfn)().get();
         });
     }
 }

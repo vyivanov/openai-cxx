@@ -18,11 +18,10 @@ constexpr auto SUBMIT_REQUEST_METHODS = std::array {
 
 template <typename... Ts>
 void iterateOverSubmitRequests(
-    const std::function<void(std::function<FakeConnector::Response()>)>& validate,
-    Ts&&... args)
+    const std::function<void(std::function<FakeConnector::Response()>)>& validate, const Ts&... args)
 {
     BOOST_FOREACH(const auto pfn, ::SUBMIT_REQUEST_METHODS) {
-        auto fake = FakeConnector(std::forward<Ts>(args)...);
+        auto fake = FakeConnector(args...);
         validate([&] {
             return std::bind(pfn, &fake)().get();
         });

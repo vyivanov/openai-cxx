@@ -19,32 +19,32 @@ FakeConnector::FakeConnector(Response to_be_returned): m_response(std::move(to_b
     assert(not m_response.body.empty());
 }
 
-RestConnector& FakeConnector::appendRoutePath(std::string&&)
+auto FakeConnector::appendRoutePath(std::string&&) -> RestConnector&
 {
     return (*this);
 }
 
-RestConnector& FakeConnector::addHeaderField(std::string&&, std::string&&)
+auto FakeConnector::addHeaderField(std::string&&, std::string&&) -> RestConnector&
 {
     return (*this);
 }
 
-RestConnector& FakeConnector::setBodyContent(std::string&&)
+auto FakeConnector::setBodyContent(std::string&&) -> RestConnector&
 {
     return (*this);
 }
 
-std::future<RestConnector::Response> FakeConnector::submitGetRequest()
+auto FakeConnector::submitGetRequest() -> std::future<Response>
 {
     return make_response();
 }
 
-std::future<RestConnector::Response> FakeConnector::submitPostRequest()
+auto FakeConnector::submitPostRequest() -> std::future<Response>
 {
     return make_response();
 }
 
-std::future<RestConnector::Response> FakeConnector::make_response()
+auto FakeConnector::make_response() -> std::future<Response>
 {
     auto promise = std::promise<Response>{};
     auto future = promise.get_future();

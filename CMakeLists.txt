@@ -9,7 +9,8 @@ set(INC_PRIV inc/priv/fake-connector.hpp
              inc/priv/mock-connector.hpp
              inc/priv/rest-connector.hpp)
 
-set(SRC src/priv/fake-connector.cpp)
+set(SRC src/priv/fake-connector.cpp
+        src/priv/mock-connector.cpp)
 
 add_library(${PROJECT_NAME} SHARED ${INC_PRIV} ${SRC})
 target_include_directories(${PROJECT_NAME} PRIVATE inc/priv/ Boost::headers)

@@ -8,6 +8,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
+#include "rest-connector.hpp"
+
 namespace Openai::Impl {
 
 FakeConnector::FakeConnector(Response to_be_returned): m_response(std::move(to_be_returned))
@@ -17,34 +19,34 @@ FakeConnector::FakeConnector(Response to_be_returned): m_response(std::move(to_b
     assert(not m_response.body.empty());
 }
 
-FakeConnector& FakeConnector::appendRoutePath(std::string&&)
+RestConnector& FakeConnector::appendRoutePath(std::string&&)
 {
     return (*this);
 }
 
-FakeConnector& FakeConnector::addHeaderField(std::string&&, std::string&&)
+RestConnector& FakeConnector::addHeaderField(std::string&&, std::string&&)
 {
     return (*this);
 }
 
-FakeConnector& FakeConnector::setBodyContent(std::string&&)
+RestConnector& FakeConnector::setBodyContent(std::string&&)
 {
     return (*this);
 }
 
-std::future<FakeConnector::Response> FakeConnector::submitGetRequest()
+std::future<RestConnector::Response> FakeConnector::submitGetRequest()
 {
     return make_response();
 }
 
-std::future<FakeConnector::Response> FakeConnector::submitPostRequest()
+std::future<RestConnector::Response> FakeConnector::submitPostRequest()
 {
     return make_response();
 }
 
-std::future<FakeConnector::Response> FakeConnector::make_response()
+std::future<RestConnector::Response> FakeConnector::make_response()
 {
-    auto promise = std::promise<FakeConnector::Response>{};
+    auto promise = std::promise<Response>{};
     auto future = promise.get_future();
 
     auto header_lower_case_keys = decltype(m_response.header){m_response.header.size()};

@@ -64,7 +64,11 @@ TEST(test_params_throughing, pass_header_and_body)
             EXPECT_EQ(resp.header, header_lower_case_keys);
             EXPECT_EQ(resp.body, body);
         },
-        code, header, body
+        FakeConnector::Response {
+            .code = code,
+            .header = header,
+            .body = body,
+        }
     );
 }
 
@@ -80,8 +84,10 @@ TEST(test_params_invalidation, double_call_to_submition)
             EXPECT_EQ(resp_2.header, decltype(resp_2.header){});
             EXPECT_EQ(resp_2.body, decltype(resp_2.body){});
         },
-        FakeConnector::Response::Code{1},
-        FakeConnector::Response::Header{{"2", "3"}},
-        FakeConnector::Response::Body{"4"}
+        FakeConnector::Response {
+            .code = 1,
+            .header = {{"2", "3"}},
+            .body = "4",
+        }
     );
 }

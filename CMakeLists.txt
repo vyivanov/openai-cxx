@@ -7,12 +7,14 @@ find_package(GTest REQUIRED)
 # TODO: Update CMake up to 3.23 in order to find GTest::GMock as well.
 # TODO: Add 'cpr' via find_package(...).
 
-set(INC_PRIV inc/priv/fake-connector.hpp
+set(INC_PRIV inc/priv/completion-service.hpp
+             inc/priv/fake-connector.hpp
              inc/priv/http-connector.hpp
              inc/priv/mock-connector.hpp
              inc/priv/rest-connector.hpp)
 
-set(SRC src/priv/fake-connector.cpp
+set(SRC src/priv/completion-service.cpp
+        src/priv/fake-connector.cpp
         src/priv/http-connector.cpp
         src/priv/mock-connector.cpp)
 

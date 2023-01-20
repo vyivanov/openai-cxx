@@ -2,11 +2,13 @@ find_package(GTest REQUIRED)
 find_package(Boost REQUIRED)
 
 set(TEST_NAME
+    ${PROJECT_NAME}-priv-completion
     ${PROJECT_NAME}-fake-connector
     ${PROJECT_NAME}-mock-connector
     ${PROJECT_NAME}-rest-connector)
 
 set(TEST_FILE
+    ${CMAKE_SOURCE_DIR}/tests/priv/completion-service.cpp
     ${CMAKE_SOURCE_DIR}/tests/priv/fake-connector.cpp
     ${CMAKE_SOURCE_DIR}/tests/priv/mock-connector.cpp
     ${CMAKE_SOURCE_DIR}/tests/priv/rest-connector.cpp)

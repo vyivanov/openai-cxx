@@ -6,10 +6,12 @@ find_package(Boost REQUIRED)
 find_package(GTest REQUIRED)    # TODO: Update CMake up to 3.23 in order to find GTest::GMock as well.
 
 set(INC_PRIV inc/priv/fake-connector.hpp
+             inc/priv/http-connector.hpp
              inc/priv/mock-connector.hpp
              inc/priv/rest-connector.hpp)
 
 set(SRC src/priv/fake-connector.cpp
+        src/priv/http-connector.cpp
         src/priv/mock-connector.cpp)
 
 add_library(${PROJECT_NAME} SHARED ${INC_PRIV} ${SRC})

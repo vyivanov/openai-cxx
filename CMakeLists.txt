@@ -4,6 +4,7 @@ project(openaicxx LANGUAGES CXX
 
 find_package(Boost REQUIRED)
 find_package(GTest REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 # TODO: Update CMake up to 3.23 in order to find GTest::GMock as well.
 # TODO: Add 'cpr' via find_package(...).
 
@@ -11,7 +12,8 @@ set(INC_PRIV inc/priv/completion-service.hpp
              inc/priv/fake-connector.hpp
              inc/priv/http-connector.hpp
              inc/priv/mock-connector.hpp
-             inc/priv/rest-connector.hpp)
+             inc/priv/rest-connector.hpp
+             inc/priv/ser-des.hpp)
 
 set(SRC src/priv/completion-service.cpp
         src/priv/fake-connector.cpp

@@ -13,6 +13,7 @@ set(INC_PUB inc/pub/completion.hpp)
 set(INC_PRIV inc/priv/completion-service.hpp
              inc/priv/fake-connector.hpp
              inc/priv/http-connector.hpp
+             inc/priv/make.hpp
              inc/priv/mock-connector.hpp
              inc/priv/rest-connector.hpp
              inc/priv/ser-des.hpp)

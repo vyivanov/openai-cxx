@@ -15,6 +15,14 @@ struct RestConnector {
         Code code = {};
         Header header = {};
         Body body = {};
+
+        auto operator==(const Response& rhs) const -> bool {
+            return (code == rhs.code) and (header == rhs.header) and (body == rhs.body);
+        }
+
+        auto operator!=(const Response& rhs) const -> bool {
+            return not ((*this) == rhs);
+        }
     };
 
     virtual RestConnector& appendRoutePath(std::string&& value) = 0;

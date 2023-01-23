@@ -8,7 +8,8 @@ find_package(nlohmann_json CONFIG REQUIRED)
 # TODO: Update CMake up to 3.23 in order to find GTest::GMock as well.
 # TODO: Add 'cpr' via find_package(...).
 
-set(INC_PUB inc/pub/completion.hpp)
+set(INC_PUB inc/pub/completion.hpp
+            inc/pub/openai.hpp)
 
 set(INC_PRIV inc/priv/completion-service.hpp
              inc/priv/fake-connector.hpp

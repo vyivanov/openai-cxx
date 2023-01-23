@@ -3,11 +3,13 @@ find_package(Boost REQUIRED)
 
 set(TEST_NAME
     ${PROJECT_NAME}-fake-connector
-    ${PROJECT_NAME}-mock-connector)
+    ${PROJECT_NAME}-mock-connector
+    ${PROJECT_NAME}-rest-connector)
 
 set(TEST_FILE
     ${CMAKE_SOURCE_DIR}/tests/priv/fake-connector.cpp
-    ${CMAKE_SOURCE_DIR}/tests/priv/mock-connector.cpp)
+    ${CMAKE_SOURCE_DIR}/tests/priv/mock-connector.cpp
+    ${CMAKE_SOURCE_DIR}/tests/priv/rest-connector.cpp)
 
 foreach(name file IN ZIP_LISTS TEST_NAME TEST_FILE)
     add_executable(${name} ${CMAKE_SOURCE_DIR}/tests/main.cpp ${file})

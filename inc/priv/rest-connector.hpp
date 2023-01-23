@@ -12,9 +12,9 @@ struct RestConnector {
         using Header = std::unordered_map<std::string, std::string>;
         using Body = std::string;
 
-        Code code;
-        Header header;
-        Body body;
+        Code code = {};
+        Header header = {};
+        Body body = {};
     };
 
     virtual RestConnector& appendRoutePath(std::string&& value) = 0;
@@ -24,7 +24,7 @@ struct RestConnector {
     virtual std::future<Response> submitGetRequest() = 0;
     virtual std::future<Response> submitPostRequest() = 0;
 
-    virtual ~RestConnector() = default;
+    virtual ~RestConnector() noexcept = default;
 };
 
 }

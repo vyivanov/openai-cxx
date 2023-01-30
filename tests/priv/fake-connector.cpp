@@ -14,8 +14,8 @@ using Openai::Impl::RestConnector;
 using namespace std::string_literals;
 
 constexpr auto SUBMIT_REQUEST_METHODS = std::array {
-    &FakeConnector::submitGetRequest,
-    &FakeConnector::submitPostRequest,
+    std::mem_fn(&FakeConnector::submitGetRequest),
+    std::mem_fn(&FakeConnector::submitPostRequest),
 };
 
 template <typename... Ts>
@@ -25,7 +25,7 @@ void iterateOverSubmitRequests(
     BOOST_FOREACH(const auto& pfn, ::SUBMIT_REQUEST_METHODS) {
         auto fake = FakeConnector(args...);
         validate([&] {
-            return (fake.*pfn)().get();
+            return pfn(fake).get();
         });
     }
 }
@@ -33,7 +33,7 @@ void iterateOverSubmitRequests(
 TEST(test_params_throughing, pass_empty_response_fields)
 {
     ::iterateOverSubmitRequests(
-        [] (const std::function<RestConnector::Response()>& submitRequest) {
+        [] (const auto& submitRequest) {
             const auto resp = submitRequest();
 
             EXPECT_EQ(resp.code, decltype(resp.code){});
@@ -58,7 +58,7 @@ TEST(test_params_throughing, pass_header_and_body)
     }
 
     ::iterateOverSubmitRequests(
-        [&] (const std::function<RestConnector::Response()>& submitRequest) {
+        [&] (const auto& submitRequest) {
             const auto resp = submitRequest();
 
             EXPECT_EQ(resp.code, code);
@@ -76,7 +76,7 @@ TEST(test_params_throughing, pass_header_and_body)
 TEST(test_params_invalidation, double_call_to_submition)
 {
     ::iterateOverSubmitRequests(
-        [] (const std::function<RestConnector::Response()>& submitRequest) {
+        [] (const auto& submitRequest) {
             [[maybe_unused]]
             const auto resp_1 = submitRequest();
             const auto resp_2 = submitRequest();

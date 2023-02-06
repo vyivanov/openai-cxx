@@ -43,8 +43,19 @@ private:
 class Result final {
 public:
     explicit Result(std::future<RestConnector::Response> response) noexcept;
+
+    std::string id() noexcept;
+    std::time_t created() noexcept;
+
 private:
+    void parse();
+
     std::future<RestConnector::Response> m_response = {};
+
+    std::string m_id = {};
+    std::time_t m_created = {};
+
+    DECLARE_FROM_JSON(Result);
 };
 
 }

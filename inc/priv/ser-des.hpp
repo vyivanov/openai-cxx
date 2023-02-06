@@ -48,16 +48,19 @@ nlohmann::json StructT##_to_json(T&& from_obj) {   \
 #define CALL_TO_JSON(StructT, ptr) \
 [ptr] { assert(ptr); return StructT##_to_json(*ptr); }()
 
-#define FROM_JSON_DECLARATION(StructT)  \
+#define DECLARE_FROM_JSON(ClassT)  \
 template <typename T>                   \
-friend void StructT##_Result_from_json(T& to_obj, nlohmann::json&& json)
+friend void ClassT##_from_json(T& to_obj, nlohmann::json&& json)
 
-#define FROM_JSON_DEFINITION(StructT, ...)  \
-template <typename T>                       \
-void StructT##_Result_from_json(StructT::Result& to_obj, nlohmann::json&& json) \
-{ \
-    (void) json; (void) to_obj; \
+#define DESERIALIZE(field) { \
+    json.at(#field).get_to(to_obj.m_##field);                             \
 }
 
-#define FROM_JSON_CALL(StructT, ptr, json) \
-[ptr] { assert(ptr); StructT##_Result_from_json(*ptr, json); }()
+#define DEFINE_FROM_JSON(ClassT, ...)  \
+template <typename T>                       \
+void ClassT##_from_json(T& to_obj, nlohmann::json&& json) { \
+    NLOHMANN_JSON_PASTE(DESERIALIZE, __VA_ARGS__)  \
+}
+
+#define CALL_FROM_JSON(ClassT, ptr, json) \
+[&,ptr] { assert(ptr); ClassT##_from_json(*ptr, json); }()

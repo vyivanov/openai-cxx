@@ -8,6 +8,7 @@
 #include <nlohmann/json.hpp>
 
 #include "completion-service.hpp"
+#include "fake-connector.hpp"
 #include "mock-connector.hpp"
 
 namespace Impl = Openai::Impl;
@@ -112,4 +113,43 @@ TEST(connector_input, completion_with_echo_parameter)
 
     auto response = completion.submitRequest().get();
     EXPECT_EQ(response, decltype(response){});
+}
+
+TEST(ret, ret)
+{
+    auto body = R"json({
+        "id": "cmpl-6aTwrtMMYizlpEP2iP6SoHSoOrdBD",
+        "created": 1674152949,
+        "choices": [
+            {
+                "text": "Who are you?\n\nI am Ella. I am a student, an artist, and",
+                "index": 0,
+                "logprobs": null,
+                "finish_reason": "length"
+            },
+            {
+                "text": "Mom?\n\nYes?",
+                "index": 1,
+                "logprobs": null,
+                "finish_reason": "stop"
+            }],
+        "usage": {
+            "prompt_tokens": 6,
+            "completion_tokens": 20,
+            "total_tokens": 26
+        }
+    })json"s;
+
+    auto response = Impl::RestConnector::Response {
+        .code   = 200,
+        .header = {{"content-type", "application/json"}},
+        .body   = std::move(body),
+    };
+
+    auto fake = std::make_unique<Impl::FakeConnector>(std::move(response));
+    auto completion = Impl::Completion::Completion{std::move(fake)};
+    auto result = Impl::Completion::Result{completion.submitRequest()};
+
+    EXPECT_EQ(result.id(), "cmpl-6aTwrtMMYizlpEP2iP6SoHSoOrdBD");
+    EXPECT_EQ(result.created(), 1674152949);
 }
